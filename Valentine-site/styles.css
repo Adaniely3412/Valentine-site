@@ -1,0 +1,180 @@
+:root{
+  --bg1: #FFE6F0;
+  --bg2: #FFC2D6;
+  --bg3: #FFD6E5;
+
+  --deep: #5C1A2D;
+  --soft: #7A3B53;
+
+  --btn1: #FF6F91;
+  --btn2: #FF85A2;
+}
+
+*{ box-sizing: border-box; }
+
+body{
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Inter", sans-serif;
+  background: linear-gradient(135deg, var(--bg1), var(--bg3), var(--bg2));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.page{
+  width: min(440px, 92vw);
+  padding: 24px;
+}
+
+.card{
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(14px);
+  border-radius: 28px;
+  padding: 28px 24px 32px;
+  box-shadow: 0 20px 45px rgba(92,26,45,0.18);
+  border: 1px solid rgba(255,255,255,0.5);
+  text-align: center;
+}
+
+.hero-img{
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 22px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow: 0 18px 35px rgba(92,26,45,0.15);
+}
+
+.headline{
+  font-family: "Playfair Display", serif;
+  font-size: 32px;
+  line-height: 1.2;
+  color: var(--deep);
+  margin: 0 0 12px;
+}
+
+.subtext{
+  color: var(--soft);
+  margin: 0 0 22px;
+  font-size: 15px;
+}
+
+.primary-btn{
+  display: inline-block;
+  padding: 14px 28px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--btn1), var(--btn2));
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: 0 18px 35px rgba(255,111,145,0.35);
+  transition: transform .15s ease, box-shadow .2s ease;
+}
+
+.primary-btn:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 22px 45px rgba(255,111,145,0.45);
+}
+
+.primary-btn:active{
+  transform: scale(0.97);
+}
+
+.note{
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--soft);
+}
+
+/* -------------------------
+   Loading hearts overlay
+-------------------------- */
+
+.hidden{ display:none; }
+
+.loader{
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 194, 214, 0.45);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.loader-card{
+  width: min(360px, 86vw);
+  padding: 22px 18px;
+  border-radius: 24px;
+  background: rgba(255,255,255,0.72);
+  border: 1px solid rgba(255,255,255,0.65);
+  box-shadow: 0 18px 40px rgba(92,26,45,0.18);
+  text-align: center;
+}
+
+.hearts{
+  font-size: 28px;
+  letter-spacing: 6px;
+}
+
+.hearts span{
+  display: inline-block;
+  animation: heartPop 0.9s ease-in-out infinite;
+}
+
+.hearts span:nth-child(2){ animation-delay: 0.12s; }
+.hearts span:nth-child(3){ animation-delay: 0.24s; }
+
+@keyframes heartPop{
+  0%,100%{ transform: translateY(0) scale(1); opacity: 0.85; }
+  50%{ transform: translateY(-10px) scale(1.12); opacity: 1; }
+}
+
+.loader-text{
+  margin: 12px 0 0;
+  color: var(--soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+/* -------------------------
+   Question page extras
+-------------------------- */
+
+.meme-img{
+  width: 100%;
+  max-height: 190px;
+  object-fit: contain;
+  border-radius: 18px;
+  margin: 2px 0 12px;
+}
+
+.stage{
+  position: relative;
+  height: 230px;
+  margin-top: 10px;
+}
+
+/* Make the buttons behave like buttons even though .primary-btn is an <a> style */
+.btn-like{
+  border: none;
+  cursor: pointer;
+}
+
+/* This is the KEY: NO must be absolute so JS can move it */
+.ghost-btn{
+  position: absolute;
+  left: 50%;
+  top: 140px;
+  transform: translateX(-50%);
+  padding: 14px 26px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.65);
+  color: var(--deep);
+  border: 1px solid rgba(255,255,255,0.8);
+  font-weight: 700;
+}
+

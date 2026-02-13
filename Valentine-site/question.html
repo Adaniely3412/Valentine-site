@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>For Jackie — Question</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="page">
+    <div class="card">
+
+      <img class="meme-img" src="assets/minion.gif" alt="minion please" />
+
+      <h1 class="headline"><span data-name></span>, will you be my Valentine?</h1>
+      <p class="subtext" id="tryMsg">Choose wisely 😌</p>
+
+      <div class="stage" id="stage">
+        <button class="primary-btn btn-like" id="yesBtn">YES</button>
+        <button class="ghost-btn btn-like" id="noBtn">NO</button>
+      </div>
+
+      <p class="note">Really ?!</p>
+
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    document.getElementById("yesBtn").addEventListener("click", () => {
+      location.href = "yes.html?name=" + encodeURIComponent(getName());
+    });
+  </script>
+
+</body>
+</html>
