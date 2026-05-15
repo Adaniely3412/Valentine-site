@@ -1,0 +1,41 @@
+{
+  "name": "ViltrumiteSimulator",
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$ignoreUnknownInstances": true,
+      "Main": {
+        "$path": "src/ServerScriptService/Main.server.lua"
+      },
+      "RemoteSetup": {
+        "$path": "src/ServerScriptService/RemoteSetup.server.lua"
+      },
+      "Services": {
+        "$className": "Folder",
+        "$path": "src/ServerScriptService/Services"
+      }
+    },
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "$ignoreUnknownInstances": true,
+      "Modules": {
+        "$className": "Folder",
+        "$path": "src/ReplicatedStorage/Modules"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$ignoreUnknownInstances": true,
+        "$path": "src/StarterPlayerScripts"
+      }
+    },
+    "StarterGui": {
+      "$className": "StarterGui",
+      "$ignoreUnknownInstances": true,
+      "$path": "src/StarterGui"
+    }
+  }
+}
