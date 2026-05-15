@@ -55,6 +55,29 @@ event("BossDefeated")        -- server → all    : boss killed
 event("BossHealthUpdate")    -- server → all    : boss HP changed
 event("BossMove")            -- server → all    : boss using a move (effects)
 
+-- Quests
+event("QuestAssigned")       -- server → client : new quest active
+event("QuestProgress")       -- server → client : objective updated
+event("QuestCompleted")      -- server → client : quest finished + rewards
+event("OpenQuestDialog")     -- server → client : open Cecil dialog
+event("AcceptQuest")         -- client → server : player accepts quest
+
+-- Leaderboard
+event("LeaderboardUpdate")   -- server → all    : global top-10 data
+event("SessionBoard")        -- server → client : current session ranking
+event("GetLeaderboard")      -- client → server : request refresh
+event("GetSessionBoard")     -- client → server : request session board
+
+-- Guilds
+event("GuildCreated")        -- server → all    : new guild announced
+event("GuildJoined")         -- server → client : you joined a guild
+event("GuildLeft")           -- server → client : you left your guild
+event("GuildInfo")           -- server → members: guild data updated
+event("GuildDisbanded")      -- server → all    : guild disbanded
+event("CreateGuild")         -- client → server : create request
+event("JoinGuild")           -- client → server : join request
+event("LeaveGuild")          -- client → server : leave request
+
 -- Animation / Sound
 event("PlayAnimation")       -- server → all    : play anim on a character
 event("PlaySound")           -- server → all    : play sound at position

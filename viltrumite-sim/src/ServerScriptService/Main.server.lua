@@ -15,10 +15,17 @@ local FlightService      = require(script.Parent.Services.FlightService)
 local ConquestService    = require(script.Parent.Services.ConquestService)
 local BossService        = require(script.Parent.Services.BossService)
 local DestructionService = require(script.Parent.Services.DestructionService)
+local QuestService       = require(script.Parent.Services.QuestService)
+local LeaderboardService = require(script.Parent.Services.LeaderboardService)
+local GuildService       = require(script.Parent.Services.GuildService)
+local MapService         = require(script.Parent.Services.MapService)
 
 local Config        = require(ReplicatedStorage.Modules.Config)
 local BloodlineData = require(ReplicatedStorage.Modules.BloodlineData)
 local CosmeticData  = require(ReplicatedStorage.Modules.CosmeticData)
+
+-- Build the world first
+MapService.Build()
 
 -- ── Player lifecycle ─────────────────────────────────────────────
 
@@ -71,10 +78,12 @@ end
 
 Players.PlayerAdded:Connect(function(player)
 	local data = PlayerDataService.Load(player)
+	QuestService.Load(player)
+	LeaderboardService.OnPlayerAdded(player)
+	GuildService.OnPlayerAdded(player)
 	player.CharacterAdded:Connect(function(character)
 		onCharacterAdded(player, character, data)
 	end)
-	-- If character already exists (Studio Play Mode edge-case)
 	if player.Character then
 		onCharacterAdded(player, player.Character, data)
 	end
@@ -82,6 +91,9 @@ end)
 
 Players.PlayerRemoving:Connect(function(player)
 	PlayerDataService.Remove(player)
+	QuestService.Remove(player)
+	LeaderboardService.OnPlayerRemoving(player)
+	GuildService.OnPlayerRemoving(player)
 	FlightService.OnPlayerRemoving(player)
 end)
 
@@ -135,6 +147,104 @@ task.spawn(function()
 			end)
 		end
 	end
+end)
+
+-- ── Quest remotes ────────────────────────────────────────────────
+
+Remotes.AcceptQuest.OnServerEvent:Connect(function(player, questId)
+	QuestService.AssignQuest(player, questId)
+end)
+
+-- Cecil ProximityPrompt (MapService places it on the CecilNPC part)
+workspace.DescendantAdded:Connect(function(desc)
+	if desc:IsA("ProximityPrompt") and desc.ActionText == "Talk to Cecil" then
+		desc.Triggered:Connect(function(triggeringPlayer)
+			QuestService.OpenDialog(triggeringPlayer)
+		end)
+	end
+end)
+-- Handle already-added prompts (race condition guard)
+for _, desc in ipairs(workspace:GetDescendants()) do
+	if desc:IsA("ProximityPrompt") and desc.ActionText == "Talk to Cecil" then
+		desc.Triggered:Connect(function(triggeringPlayer)
+			QuestService.OpenDialog(triggeringPlayer)
+		end)
+	end
+end
+
+-- Hook quest progress into combat events
+local _origHit = CombatService.ProcessHit
+CombatService.ProcessHit = function(attackerPlayer, ...)
+	_origHit(attackerPlayer, ...)
+	QuestService.OnHit(attackerPlayer, 1)
+end
+
+-- Hook boss deaths for quest progress
+Remotes.BossDefeated.OnServerEvent = nil  -- BossService fires this event; listen here
+local _bossDiedConn
+_bossDiedConn = Remotes.BossDefeated.OnClientEvent  -- server-side: catch via BossDefeated broadcast
+-- Actually hook via a BindableEvent pattern inside BossService is cleaner;
+-- instead we expose a callback table:
+-- BossService fires Remotes.BossDefeated:FireAllClients(bossName, killerName)
+-- We intercept by listening for the leaderboard / quest bridge on the same frame.
+-- Since BossDefeated is server→all, we hook the zone capture and PL change instead:
+
+Remotes.PowerLevelUp.OnServerEvent = nil  -- already a server event from StatsUpdated
+-- PL quest hook fires from PlayerDataService.AddPowerLevel → already calls StatsUpdated.
+-- We override AddPowerLevel to also call QuestService:
+local _origAddPL = PlayerDataService.AddPowerLevel
+PlayerDataService.AddPowerLevel = function(player, amount)
+	_origAddPL(player, amount)
+	local data = PlayerDataService.Get(player)
+	if data then QuestService.OnPLChanged(player, data.powerLevel) end
+end
+
+-- Zone capture → quest check
+Remotes.ZoneCapture.OnServerEvent = nil  -- ZoneCapture is server→all; hook ConquestService
+local _origZoneCapture = ConquestService.PlayerEntered
+-- Count controlled zones after each tick; fire QuestService
+local prevControlCounts = {}
+local _origTick = ConquestService.Tick
+ConquestService.Tick = function(dt)
+	_origTick(dt)
+	local zones   = ConquestService.GetZones()
+	local counts  = { ["Viltrumite Empire"]=0, ["Earth Defenders"]=0 }
+	for _, z in pairs(zones) do
+		if z.controller then counts[z.controller] = counts[z.controller] + 1 end
+	end
+	for _, p in ipairs(Players:GetPlayers()) do
+		local faction = (p.Character and p.Character:GetAttribute("Faction")) or "Earth Defenders"
+		local held    = counts[faction] or 0
+		if held ~= (prevControlCounts[p.UserId] or -1) then
+			prevControlCounts[p.UserId] = held
+			QuestService.OnZonesCaptured(p, held)
+		end
+	end
+end
+
+-- ── Leaderboard remotes ───────────────────────────────────────────
+
+Remotes.GetLeaderboard.OnServerEvent:Connect(function(player)
+	LeaderboardService.Broadcast()
+end)
+
+Remotes.GetSessionBoard.OnServerEvent:Connect(function(player)
+	local board = LeaderboardService.GetSessionBoard()
+	Remotes.SessionBoard:FireClient(player, board)
+end)
+
+-- ── Guild remotes ─────────────────────────────────────────────────
+
+Remotes.CreateGuild.OnServerEvent:Connect(function(player, name, faction)
+	GuildService.Create(player, name, faction)
+end)
+
+Remotes.JoinGuild.OnServerEvent:Connect(function(player, name)
+	GuildService.Join(player, name)
+end)
+
+Remotes.LeaveGuild.OnServerEvent:Connect(function(player)
+	GuildService.Leave(player)
 end)
 
 -- ── Cosmetics ────────────────────────────────────────────────────
