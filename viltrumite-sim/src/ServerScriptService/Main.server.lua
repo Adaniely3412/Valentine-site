@@ -9,13 +9,16 @@ local Workspace         = game:GetService("Workspace")
 local Remotes = ReplicatedStorage:WaitForChild("Remotes", 15)
 assert(Remotes, "[Main] Remotes folder never appeared — check RemoteSetup script.")
 
-local PlayerDataService = require(script.Parent.Services.PlayerDataService)
-local CombatService     = require(script.Parent.Services.CombatService)
-local FlightService     = require(script.Parent.Services.FlightService)
-local ConquestService   = require(script.Parent.Services.ConquestService)
+local PlayerDataService  = require(script.Parent.Services.PlayerDataService)
+local CombatService      = require(script.Parent.Services.CombatService)
+local FlightService      = require(script.Parent.Services.FlightService)
+local ConquestService    = require(script.Parent.Services.ConquestService)
+local BossService        = require(script.Parent.Services.BossService)
+local DestructionService = require(script.Parent.Services.DestructionService)
 
 local Config        = require(ReplicatedStorage.Modules.Config)
 local BloodlineData = require(ReplicatedStorage.Modules.BloodlineData)
+local CosmeticData  = require(ReplicatedStorage.Modules.CosmeticData)
 
 -- ── Player lifecycle ─────────────────────────────────────────────
 
@@ -92,9 +95,7 @@ Remotes.CombatBlock.OnServerEvent:Connect(function(player, isBlocking)
 	CombatService.ProcessBlock(player, isBlocking)
 end)
 
-Remotes.UseMove.OnServerEvent:Connect(function(player, moveName, targetCharacter)
-	CombatService.ProcessHit(player, targetCharacter, moveName, 1)
-end)
+-- UseMove handled below with destruction hook
 
 Remotes.FlightToggle.OnServerEvent:Connect(function(player)
 	FlightService.ToggleFlight(player)
@@ -136,12 +137,76 @@ task.spawn(function()
 	end
 end)
 
+-- ── Cosmetics ────────────────────────────────────────────────────
+
+Remotes.EquipCosmetic.OnServerEvent:Connect(function(player, costumeName)
+	local data = PlayerDataService.Get(player)
+	if not data then return end
+	if not CosmeticData.IsUnlocked(costumeName, data) then
+		Remotes.ShowNotification:FireClient(player, "Costume not unlocked yet!", "error")
+		return
+	end
+	data.equippedCostume = costumeName
+	-- Apply body colors to character
+	local char = player.Character
+	if char then
+		local costume = CosmeticData.Get(costumeName)
+		if costume then
+			local function setColor(partName, colorName)
+				local p = char:FindFirstChild(partName)
+				if p and p:IsA("BasePart") then
+					p.BrickColor = BrickColor.new(colorName)
+				end
+			end
+			local bc = costume.bodyColor
+			setColor("Torso",      bc.torso)
+			setColor("Left Arm",   bc.limbs)
+			setColor("Right Arm",  bc.limbs)
+			setColor("Left Leg",   bc.limbs)
+			setColor("Right Leg",  bc.limbs)
+			setColor("Head",       bc.head)
+			char:SetAttribute("EquippedCostume", costumeName)
+		end
+	end
+	Remotes.CostumeChanged:FireAllClients(player, costumeName)
+end)
+
+Remotes.GetOwnedCosmetics.OnServerInvoke = function(player)
+	local data = PlayerDataService.Get(player)
+	if not data then return {} end
+	local result = {}
+	for name in pairs(CosmeticData.Costumes) do
+		result[name] = CosmeticData.IsUnlocked(name, data)
+	end
+	return result
+end
+
+-- ── EarthShatter destruction hook ────────────────────────────────
+-- CombatService fires this when an EarthShatter move lands.
+Remotes.UseMove.OnServerEvent:Connect(function(player, moveName, targetCharacter)
+	CombatService.ProcessHit(player, targetCharacter, moveName, 1)
+	if moveName == "EarthShatter" then
+		local char = player.Character
+		if char then
+			local root = char:FindFirstChild("HumanoidRootPart")
+			if root then
+				DestructionService.OnImpact(root.Position, 20, 60)
+			end
+		end
+	end
+end)
+
 -- ── Game loops ───────────────────────────────────────────────────
 
 ConquestService.Start()
 
 RunService.Heartbeat:Connect(function(dt)
 	ConquestService.Tick(dt)
+end)
+
+-- Spawn all bosses after world loads
+task.delay(8, function()
+	BossService.SpawnAll()
 end)
 
 print("[ViltrumiteSimulator] Server v" .. Config.VERSION .. " online.")

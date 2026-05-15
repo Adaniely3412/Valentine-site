@@ -51,8 +51,24 @@ event("ShowDialogue")        -- server → client : NPC speech
 event("BossSpawned")         -- server → all    : boss appeared
 event("BossDefeated")        -- server → all    : boss killed
 
+-- Boss
+event("BossHealthUpdate")    -- server → all    : boss HP changed
+event("BossMove")            -- server → all    : boss using a move (effects)
+
+-- Animation / Sound
+event("PlayAnimation")       -- server → all    : play anim on a character
+event("PlaySound")           -- server → all    : play sound at position
+
+-- Cosmetics
+event("CostumeChanged")      -- server → all    : player changed costume
+event("EquipCosmetic")       -- client → server : equip a cosmetic
+
+-- Destruction
+event("CraterCreated")       -- server → all    : crater visual at position
+
 -- Functions
 fn("GetPlayerData")          -- client → server : initial data fetch
 fn("RollBloodline")          -- client → server : reroll (if permitted)
+fn("GetOwnedCosmetics")      -- client → server : fetch unlock status
 
 print("[RemoteSetup] All remotes created.")
