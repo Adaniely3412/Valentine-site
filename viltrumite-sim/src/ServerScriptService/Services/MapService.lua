@@ -108,29 +108,46 @@ end
 -- ── Ground & roads ────────────────────────────────────────────────
 
 local function buildGround()
-	-- Remove Studio default Baseplate so terrain shows
-	local bp = workspace:FindFirstChild("Baseplate")
-	if bp then bp:Destroy() end
+	-- Safely remove Studio's default Baseplate (locked parts need pcall)
+	pcall(function()
+		local bp = workspace:FindFirstChild("Baseplate")
+		if bp then bp:Destroy() end
+	end)
 
-	local terrain = workspace:FindFirstChildOfClass("Terrain")
-	if terrain then
-		terrain:FillBlock(CFrame.new(0,-4,0), Vector3.new(1400,8,1400), Enum.Material.Grass)
-		-- Main roads
-		terrain:FillBlock(CFrame.new(0,0,0),   Vector3.new(14,0.5,600), Enum.Material.Asphalt) -- N-S
-		terrain:FillBlock(CFrame.new(0,0,0),   Vector3.new(600,0.5,14), Enum.Material.Asphalt) -- E-W
-		terrain:FillBlock(CFrame.new(60,0,0),  Vector3.new(14,0.5,400), Enum.Material.Asphalt)
-		terrain:FillBlock(CFrame.new(-60,0,0), Vector3.new(14,0.5,400), Enum.Material.Asphalt)
-		terrain:FillBlock(CFrame.new(0,0,60),  Vector3.new(400,0.5,14), Enum.Material.Asphalt)
-		terrain:FillBlock(CFrame.new(0,0,-60), Vector3.new(400,0.5,14), Enum.Material.Asphalt)
-		-- Rocky hill under Viltrum Outpost
-		terrain:FillBlock(CFrame.new(130,15,90), Vector3.new(110,34,110), Enum.Material.Rock)
-	end
+	-- Primary ground — large flat Part (always works, no API dependency)
+	P("Ground", Vector3.new(1200, 4, 1200), CFrame.new(0, -2, 0),
+		Color3.fromRGB(90, 120, 65), Enum.Material.Grass)
 
-	-- Sidewalk pavement strips alongside main roads
-	P("SidewalkN1", Vector3.new(4,0.4,600), CFrame.new( 8,0.2,0),  Color3.fromRGB(160,160,155), Enum.Material.Concrete)
-	P("SidewalkN2", Vector3.new(4,0.4,600), CFrame.new(-8,0.2,0),  Color3.fromRGB(160,160,155), Enum.Material.Concrete)
-	P("SidewalkE1", Vector3.new(600,0.4,4), CFrame.new(0,0.2, 8),  Color3.fromRGB(160,160,155), Enum.Material.Concrete)
-	P("SidewalkE2", Vector3.new(600,0.4,4), CFrame.new(0,0.2,-8),  Color3.fromRGB(160,160,155), Enum.Material.Concrete)
+	-- Road surfaces (Parts on top of ground)
+	P("RoadNS",  Vector3.new(14, 0.5, 600), CFrame.new( 0, 0.25, 0),  Color3.fromRGB(55,55,55), Enum.Material.Asphalt)
+	P("RoadEW",  Vector3.new(600,0.5, 14),  CFrame.new( 0, 0.25, 0),  Color3.fromRGB(55,55,55), Enum.Material.Asphalt)
+	P("RoadE2",  Vector3.new(14, 0.5, 400), CFrame.new( 60,0.25, 0),  Color3.fromRGB(55,55,55), Enum.Material.Asphalt)
+	P("RoadW2",  Vector3.new(14, 0.5, 400), CFrame.new(-60,0.25, 0),  Color3.fromRGB(55,55,55), Enum.Material.Asphalt)
+	P("RoadN2",  Vector3.new(400,0.5, 14),  CFrame.new( 0, 0.25, 60), Color3.fromRGB(55,55,55), Enum.Material.Asphalt)
+	P("RoadS2",  Vector3.new(400,0.5, 14),  CFrame.new( 0, 0.25,-60), Color3.fromRGB(55,55,55), Enum.Material.Asphalt)
+
+	-- Road centre line markings
+	P("LineNS", Vector3.new(0.5,0.55,580), CFrame.new(0,0.27,0),  Color3.fromRGB(255,220,0), Enum.Material.Neon, 0.6)
+	P("LineEW", Vector3.new(580,0.55,0.5), CFrame.new(0,0.27,0),  Color3.fromRGB(255,220,0), Enum.Material.Neon, 0.6)
+
+	-- Elevated rock base for Viltrum Outpost
+	P("OutpostHill", Vector3.new(110,36,110), CFrame.new(130,16,90),
+		Color3.fromRGB(90,80,75), Enum.Material.Rock)
+
+	-- Sidewalks
+	P("SwN1", Vector3.new(4,0.45,600), CFrame.new( 8,0.22,0),  Color3.fromRGB(160,155,148), Enum.Material.Concrete)
+	P("SwN2", Vector3.new(4,0.45,600), CFrame.new(-8,0.22,0),  Color3.fromRGB(160,155,148), Enum.Material.Concrete)
+	P("SwE1", Vector3.new(600,0.45,4), CFrame.new(0,0.22, 8),  Color3.fromRGB(160,155,148), Enum.Material.Concrete)
+	P("SwE2", Vector3.new(600,0.45,4), CFrame.new(0,0.22,-8),  Color3.fromRGB(160,155,148), Enum.Material.Concrete)
+
+	-- Attempt terrain fill too (bonus, won't error if it fails)
+	pcall(function()
+		local t = workspace:FindFirstChildOfClass("Terrain")
+		if t then
+			t:FillBlock(CFrame.new(0,-4,0), Vector3.new(1200,6,1200), Enum.Material.Grass)
+			t:FillBlock(CFrame.new(130,15,90), Vector3.new(110,34,110), Enum.Material.Rock)
+		end
+	end)
 end
 
 -- ── Street lights ─────────────────────────────────────────────────
@@ -553,17 +570,25 @@ end
 -- ── Public ────────────────────────────────────────────────────────
 
 function MapService.Build()
-	setupLighting()
-	buildGround()
-	streetLights()
-	buildSpawnPlaza()
-	buildGraysonResidence()
-	buildGDAHQ()
-	buildViltrumOutpost()
-	buildBurgerMart()
-	buildHighSchool()
-	buildDowntown()
-	buildZones()
+	local steps = {
+		{"Lighting",    setupLighting},
+		{"Ground",      buildGround},
+		{"StreetLights",streetLights},
+		{"SpawnPlaza",  buildSpawnPlaza},
+		{"GraysonResidence", buildGraysonResidence},
+		{"GDAHQ",       buildGDAHQ},
+		{"ViltrumOutpost", buildViltrumOutpost},
+		{"BurgerMart",  buildBurgerMart},
+		{"HighSchool",  buildHighSchool},
+		{"Downtown",    buildDowntown},
+		{"Zones",       buildZones},
+	}
+	for _, step in ipairs(steps) do
+		local ok, err = pcall(step[2])
+		if not ok then
+			warn("[MapService] ERROR in " .. step[1] .. ": " .. tostring(err))
+		end
+	end
 	print("[MapService] Empire City generated.")
 end
 
