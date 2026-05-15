@@ -89,6 +89,10 @@ event("EquipCosmetic")       -- client → server : equip a cosmetic
 -- Destruction
 event("CraterCreated")       -- server → all    : crater visual at position
 
+-- Training
+event("TrainingComplete")    -- server → client : stat point awarded
+event("TrainingStatUpdate")  -- server → client : full stat snapshot
+
 -- Functions
 fn("GetPlayerData")          -- client → server : initial data fetch
 fn("RollBloodline")          -- client → server : reroll (if permitted)

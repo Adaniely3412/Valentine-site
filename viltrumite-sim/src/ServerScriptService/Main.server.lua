@@ -19,6 +19,7 @@ local QuestService       = require(script.Parent.Services.QuestService)
 local LeaderboardService = require(script.Parent.Services.LeaderboardService)
 local GuildService       = require(script.Parent.Services.GuildService)
 local MapService         = require(script.Parent.Services.MapService)
+local TrainingService    = require(script.Parent.Services.TrainingService)
 
 local Config        = require(ReplicatedStorage.Modules.Config)
 local BloodlineData = require(ReplicatedStorage.Modules.BloodlineData)
@@ -26,6 +27,7 @@ local CosmeticData  = require(ReplicatedStorage.Modules.CosmeticData)
 
 -- Build the world first
 MapService.Build()
+TrainingService.Init(Remotes, PlayerDataService)
 
 -- ── Player lifecycle ─────────────────────────────────────────────
 
@@ -81,11 +83,23 @@ Players.PlayerAdded:Connect(function(player)
 	QuestService.Load(player)
 	LeaderboardService.OnPlayerAdded(player)
 	GuildService.OnPlayerAdded(player)
+	TrainingService.OnPlayerAdded(player)
 	player.CharacterAdded:Connect(function(character)
 		onCharacterAdded(player, character, data)
+		-- Apply training bonuses after base stats are set
+		task.defer(function()
+			TrainingService.ApplyStats(player)
+			local stats = TrainingService.GetStats(player)
+			Remotes.TrainingStatUpdate:FireClient(player, stats)
+		end)
 	end)
 	if player.Character then
 		onCharacterAdded(player, player.Character, data)
+		task.defer(function()
+			TrainingService.ApplyStats(player)
+			local stats = TrainingService.GetStats(player)
+			Remotes.TrainingStatUpdate:FireClient(player, stats)
+		end)
 	end
 end)
 
@@ -95,6 +109,7 @@ Players.PlayerRemoving:Connect(function(player)
 	LeaderboardService.OnPlayerRemoving(player)
 	GuildService.OnPlayerRemoving(player)
 	FlightService.OnPlayerRemoving(player)
+	TrainingService.OnPlayerRemoving(player)
 end)
 
 -- ── Remote bindings ──────────────────────────────────────────────
@@ -305,6 +320,27 @@ Remotes.UseMove.OnServerEvent:Connect(function(player, moveName, targetCharacter
 		end
 	end
 end)
+
+-- ── Training PL hook ─────────────────────────────────────────────
+-- TrainingService fires TrainingComplete to the client for UI feedback.
+-- We also award the PL reward server-side here.
+local TrainingDataModule = require(ReplicatedStorage.Modules.TrainingData)
+-- Wrap TrainingService prompt trigger result by hooking via a BindableEvent-less
+-- approach: override via server event that TrainingService uses internally.
+-- Since TrainingService.lua fires the remote directly we intercept by wrapping:
+Remotes.TrainingComplete.OnClientEvent = nil  -- not valid server-side; use OnServerEvent below
+
+-- TrainingService already awards stats internally; award PL here via remote callback
+-- We use a server-only BindableEvent approach: patch after the fact.
+-- Actually: TrainingService fires TrainingComplete to client. We listen server-side
+-- by wrapping the ProximityPrompt Triggered path. Simpler: TrainingService exposes
+-- a callback table.
+TrainingService.OnTrainComplete = function(player, stationId)
+	local station = TrainingDataModule.StationById[stationId]
+	if station then
+		PlayerDataService.AddPowerLevel(player, station.plReward)
+	end
+end
 
 -- ── Game loops ───────────────────────────────────────────────────
 

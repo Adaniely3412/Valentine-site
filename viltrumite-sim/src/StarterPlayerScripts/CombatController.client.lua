@@ -306,3 +306,19 @@ player.CharacterAdded:Connect(function(newChar)
 	isBlocking  = false
 	specialCDs  = {}
 end)
+
+-- ── Mobile input bridge ───────────────────────────────────────────
+
+local MobileInput = require(ReplicatedStorage.Modules.MobileInput)
+
+MobileInput.M1.Event:Connect(function()          doM1() end)
+MobileInput.Block.Event:Connect(function(on)
+	isBlocking = on
+	character:SetAttribute("IsBlocking", on)
+	Remotes.CombatBlock:FireServer(on)
+end)
+MobileInput.SonicClap.Event:Connect(function()          useSpecial("SonicClap") end)
+MobileInput.ViltrumiteRush.Event:Connect(function()     useSpecial("ViltrumiteRush") end)
+MobileInput.EarthShatter.Event:Connect(function()       useSpecial("EarthShatter") end)
+MobileInput.ThoraxStrike.Event:Connect(function()       useSpecial("ThoraxStrike") end)
+MobileInput.SupremeOverdrive.Event:Connect(function()   useSpecial("SupremeOverdrive") end)

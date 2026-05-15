@@ -179,3 +179,17 @@ player.CharacterAdded:Connect(function(newChar)
 	bodyVelocity = nil
 	sonicTrail  = nil
 end)
+
+-- ── Mobile input bridge ───────────────────────────────────────────
+
+local MobileInput = require(ReplicatedStorage.Modules.MobileInput)
+
+MobileInput.FlightToggle.Event:Connect(function()
+	Remotes.FlightToggle:FireServer()
+end)
+
+MobileInput.FlightSprint.Event:Connect(function(on)
+	if not isFlying then return end
+	isSprinting = on
+	if sonicTrail then sonicTrail.Enabled = on end
+end)
